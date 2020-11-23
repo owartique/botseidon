@@ -1,5 +1,5 @@
 /*
-Pseudo code pour le minibot. C'est pas du tout correct niveau syntaxe? pointeurs etc mais je voulais juste donner une idée d'algorithme qu'on pourrait faire.
+Pseudo code pour le minibot. C'est pas du tout correct niveau syntaxe/pointeurs/etc mais je voulais juste donner une idée d'algorithme qu'on pourrait faire.
 Comme vous avez déja chipoté quelques heures dessus, dites moi si vous pensez que ça pourrait marcher.
 J'ai considéré que le minibot avance tout droit tant qu'il y a pas d'obstacle devant lui et qu'il s'arrête si il y a un obstacle.
 */
