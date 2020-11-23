@@ -1,7 +1,7 @@
 # minibot
 
-## TO DO
-Pour le moment la partie en C est celle qu'on a reçue des assistants, il faudrait le mettre à jour avec les modifcations du lidar. La partie python devrait être correcte car on a toujours rien changé.
+## To do
+* Replace GrayCode_C by the files in our minibot. The current directory is the one given by the assistants.
 
 ## Useful resources
 * GitHub slamtec/rplidar for C++ : https://github.com/slamtec/rplidar_sdk
