@@ -59,14 +59,11 @@ void lidarConfiguration(){
 		{
 		    fprintf(stderr, "Failed to connect to LIDAR %08x\r\n", res);
 		}
-	//rp::standalone::rplidar::RplidarScanMode scanModes;
-	//lidar->rp::standalone::rplidar::RPlidarDriver::getAllSupportedScanModes(scanModes, 3);
 
 	std::vector<rp::standalone::rplidar::RplidarScanMode> scanModes;
 	lidar->getAllSupportedScanModes(scanModes);
 
 	rp::standalone::rplidar::RplidarScanMode scanMode;
-	//lidar->startScan(false, true, 0, &scanMode);
 	lidar->startMotor();
 	lidar->startScan(0,1);
 }
@@ -83,14 +80,14 @@ bool refreshData(){
 	    for (int pos = 0; pos < (int)count ; ++pos) {
        		 float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
        		 int dist = nodes[pos].dist_mm_q2/4.0f;
-        	 int quality = nodes[pos].dist_mm_q2/4.0f;
+        	 int quality = nodes[pos].quality;
 
          	 if(quality>0){
-            		 if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
-                 		printf("obstacle\n");
-		 		return true;
-            		}
-        	}
+                if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
+                    printf("obstacle\n");
+                    return true;
+                }
+        	 }
 	    }
     }
     printf("free\n");
@@ -98,9 +95,25 @@ bool refreshData(){
 }
 
 /*
+
+*/
+void loop(){
+    obstacle = refreshData();
+    if(isMoving & obstacle){ // si obstacle et mouvement alors stop
+        can->ctrl_led(0);
+    printf("stop\n");
+        isMoving = false;
+    }
+    else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
+        can->ctrl_led(1);
+    printf("move\n");
+        isMoving = true;
+    }
+}
+
+/*
     Print the welcome message on console
 */
-
 void welcome(){
     printf("##############################################################################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
@@ -119,25 +132,14 @@ int main(int argc, char** argv){
 	can = new CAN(CAN_BR);
 	can->configure();
 	can->ctrl_led(0);
-	//can->ctrl_motor(1);
-	//can->push_PropDC(20,20);
 
 	signal(SIGINT, ctrlc);
 
     while (1){
         obstacle = refreshData();
-        if(isMoving & obstacle){ // si obstacle et mouvement alors stop
-            can->ctrl_led(0);
-	    printf("stop\n");
-            isMoving = false;
-        }
-        else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
-            can->ctrl_led(1);
-	    printf("move\n");
-            isMoving = true;
-        }
+        loop();
         if (ctrl_c_pressed){
-            break;
+                break;
         }
     }
 	lidar->stop();
