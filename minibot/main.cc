@@ -125,7 +125,7 @@ int main(int argc, char** argv){
 	int pos1=0;
 	float AngleDetect = 0.0;
 
-    while (1)
+    while (1){
         obstacle = refreshData();
         if(isMoving & obstacle){ // si obstacle et mouvement alors stop
             can->ctrl_motor(0);
@@ -138,6 +138,7 @@ int main(int argc, char** argv){
         if (ctrl_c_pressed){
             break;
         }
+    }
 	lidar->stop();
 	lidar->stopMotor();
 	can->ctrl_motor(0);
@@ -145,4 +146,5 @@ int main(int argc, char** argv){
 	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
 	lidar = NULL;
 	return 0;
+
 }
