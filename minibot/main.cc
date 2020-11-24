@@ -34,6 +34,7 @@ void ctrlc(int)
 const int DELTA   = 300;    // [mm]
 const float ALPHA = 10;     // [deg]
 bool isMoving;
+bool osbtacle;
 u_result     op_result;
 
 
@@ -44,7 +45,6 @@ u_result     op_result;
         * starts the scan
 */
 void lidarConfiguration(){
-	rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
 
     	u_result res = lidar->connect("/dev/ttyUSB0", 115200);
 
@@ -125,7 +125,8 @@ int main(int argc, char** argv)
 	int pos1=0;
 	float AngleDetect = 0.0;
 
-    while (1){
+    while (1)
+        rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
         obstacle = refreshData();
         if(isMoving & obstacle){ // si obstacle et mouvement alors stop
             can->ctrl_motor(0);
