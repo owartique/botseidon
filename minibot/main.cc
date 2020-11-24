@@ -36,6 +36,8 @@ const float ALPHA = 10;     // [deg]
 bool isMoving;
 bool osbtacle;
 u_result     op_result;
+rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
+
 
 
 /*
@@ -107,9 +109,7 @@ void welcome(){
 }
 
 
-int main(int argc, char** argv)
-{
-
+int main(int argc, char** argv){
     welcome();
     lidarConfiguration();
 
@@ -126,7 +126,6 @@ int main(int argc, char** argv)
 	float AngleDetect = 0.0;
 
     while (1)
-        rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
         obstacle = refreshData();
         if(isMoving & obstacle){ // si obstacle et mouvement alors stop
             can->ctrl_motor(0);
@@ -139,7 +138,6 @@ int main(int argc, char** argv)
         if (ctrl_c_pressed){
             break;
         }
-    }
 	lidar->stop();
 	lidar->stopMotor();
 	can->ctrl_motor(0);
