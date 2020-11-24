@@ -82,7 +82,6 @@ bool refreshData(){
        		 int dist = nodes[pos].dist_mm_q2/4.0f;
         	 int quality = nodes[pos].quality;
          	 if(quality>0){
-                printf("hello\n")
                 if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
                     printf("obstacle\n");
                     return true;
@@ -90,26 +89,9 @@ bool refreshData(){
         	 }
 	    }
     }
-    printf("free\n");
     return false;
 }
 
-/*
-
-*/
-void loop(){
-    obstacle = refreshData();
-    if(isMoving & obstacle){ // si obstacle et mouvement alors stop
-        can->ctrl_led(0);
-    printf("stop\n");
-        isMoving = false;
-    }
-    else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
-        can->ctrl_led(1);
-    printf("move\n");
-        isMoving = true;
-    }
-}
 
 /*
     Print the welcome message on console
@@ -137,7 +119,16 @@ int main(int argc, char** argv){
 
     while (1){
         obstacle = refreshData();
-        loop();
+        if(isMoving & obstacle){ // si obstacle et mouvement alors stop
+            can->ctrl_led(0);
+            printf("stop\n");
+            isMoving = false;
+        }
+        else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
+            can->ctrl_led(1);
+            printf("moving\n");
+            isMoving = true;
+        }
         if (ctrl_c_pressed){
                 break;
         }
