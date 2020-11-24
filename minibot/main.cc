@@ -33,7 +33,7 @@ void ctrlc(int)
 /* Variables declaration */
 const int DELTA   = 300;    // [mm]
 const float ALPHA = 10;     // [deg]
-bool isMoving;
+bool isMoving = false;
 bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
@@ -80,24 +80,27 @@ bool refreshData(){
     op_result = lidar->grabScanDataHq(nodes, count);
     if (IS_OK(op_result)) {
         lidar->ascendScanData(nodes, count);
-    }
-    for (int pos = 0; pos < (int)count ; ++pos) {
-        float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
-        int dist = nodes[pos].dist_mm_q2/4.0f;
-        int quality = nodes[pos].dist_mm_q2/4.0f;
+	    for (int pos = 0; pos < (int)count ; ++pos) {
+       		 float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
+       		 int dist = nodes[pos].dist_mm_q2/4.0f;
+        	 int quality = nodes[pos].dist_mm_q2/4.0f;
 
-        if(quality>0){
-            if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
-                return true;
-            }
-        }
+         	 if(quality>0){
+            		 if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
+                 		printf("obstacle\n");
+		 		return true;
+            		}
+        	}
+	    }
     }
+    printf("free\n");
     return false;
 }
 
 /*
     Print the welcome message on console
 */
+
 void welcome(){
     printf("##############################################################################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
@@ -116,22 +119,21 @@ int main(int argc, char** argv){
 	can = new CAN(CAN_BR);
 	can->configure();
 	can->ctrl_led(0);
-	can->ctrl_motor(1);
-	can->push_PropDC(20,20);
+	//can->ctrl_motor(1);
+	//can->push_PropDC(20,20);
 
 	signal(SIGINT, ctrlc);
-	int Detection = 0;
-	int pos1=0;
-	float AngleDetect = 0.0;
 
     while (1){
         obstacle = refreshData();
         if(isMoving & obstacle){ // si obstacle et mouvement alors stop
-            can->ctrl_motor(0);
+            can->ctrl_led(0);
+	    printf("stop\n");
             isMoving = false;
         }
         else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
-            can->ctrl_motor(1);
+            can->ctrl_led(1);
+	    printf("move\n");
             isMoving = true;
         }
         if (ctrl_c_pressed){
@@ -140,7 +142,7 @@ int main(int argc, char** argv){
     }
 	lidar->stop();
 	lidar->stopMotor();
-	can->ctrl_motor(0);
+	can->ctrl_led(0);
 
 	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
 	lidar = NULL;
