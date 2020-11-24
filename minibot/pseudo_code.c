@@ -71,7 +71,7 @@ bool checkObstacle(tableau){
         }
     }
     // si on arrive jusqu'ici ça veut dire qu'il y a aucun obstacle donc on renvoie false
-    return fasle;
+    return false;
 }
 
 
