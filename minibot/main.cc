@@ -84,7 +84,7 @@ bool refreshData(){
         int dist = nodes[pos].dist_mm_q2/4.0f;
         int quality = nodes[pos].dist_mm_q2/4.0f;
 
-        if(Q>0){
+        if(quality>0){
             if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
                 return true;
             }
