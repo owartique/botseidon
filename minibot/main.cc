@@ -34,7 +34,7 @@ void ctrlc(int)
 const int DELTA   = 300;    // [mm]
 const float ALPHA = 10;     // [deg]
 bool isMoving;
-
+u_result     op_result;
 
 
 /*
