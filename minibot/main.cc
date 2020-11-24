@@ -34,7 +34,7 @@ void ctrlc(int)
 const int DELTA   = 300;    // [mm]
 const float ALPHA = 10;     // [deg]
 bool isMoving;
-bool osbtacle;
+bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
 
@@ -98,7 +98,6 @@ bool refreshData(){
 /*
     Print the welcome message on console
 */
-
 void welcome(){
     printf("##############################################################################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
