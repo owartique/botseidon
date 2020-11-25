@@ -47,19 +47,13 @@ CAN *can = new CAN(CAN_BR);
         * starts the scan
 */
 void lidarConfiguration(){
-
     	u_result res = lidar->connect("/dev/ttyUSB0", 115200);
-
-		if (IS_OK(res))
-		{
+		if (IS_OK(res)){
     			printf("Success \n");
-
 		}
-		else
-		{
+		else{
 		    fprintf(stderr, "Failed to connect to LIDAR %08x\r\n", res);
 		}
-
 	std::vector<rp::standalone::rplidar::RplidarScanMode> scanModes;
 	lidar->getAllSupportedScanModes(scanModes);
 
@@ -82,9 +76,6 @@ bool refreshData(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                //printf("%f \t %f \t %f \n",angle,dist,quality);
-                //if(dist<DELTA & angle<ALPHA){
-                //printf("%f \t %f\n",angle,ALPHA);
                 if(angle<=ALPHA & (angle>=(360.0-ALPHA) | dist<DELTA)){
                     return true;
                 }
@@ -210,12 +201,9 @@ int main(int argc, char** argv){
 
     while (1){
         move(whereIsBeacon());
-
-
         if (ctrl_c_pressed){
                 break;
         }
-
     }
 	lidar->stop();
 	lidar->stopMotor();
@@ -225,5 +213,4 @@ int main(int argc, char** argv){
 	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
 	lidar = NULL;
 	return 0;
-
 }
