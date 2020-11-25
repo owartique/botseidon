@@ -1,7 +1,7 @@
 # minibot
 
-## To do
-* Replace GrayCode_C by the files in our minibot. The current directory is the one given by the assistants.
+The directory WhiteSpirit_C contains the files of the minibot (25 nov 18h)
+The directory GrayCode_C contains the files given by the assistants
 
 ## Useful resources
 * GitHub slamtec/rplidar for C++ : https://github.com/slamtec/rplidar_sdk
