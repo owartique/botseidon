@@ -31,7 +31,7 @@ void ctrlc(int)
 
 
 /* Variables declaration */
-const int DELTA   = 300;    // [mm]
+const float DELTA   = 300;    // [mm]
 const float ALPHA = 10;     // [deg]
 bool isMoving = false;
 bool obstacle;
@@ -79,7 +79,7 @@ bool refreshData(){
         lidar->ascendScanData(nodes, count);
 	    for (int pos = 0; pos < (int)count ; ++pos) {
        		 float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
-       		 int dist = nodes[pos].dist_mm_q2/4.0f;
+       		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 int quality = nodes[pos].quality;
          	 if(quality>0){
                 if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
@@ -119,6 +119,7 @@ int main(int argc, char** argv){
 
     while (1){
         obstacle = refreshData();
+
         if(isMoving & obstacle){ // si obstacle et mouvement alors stop
             can->ctrl_led(0);
             printf("stop\n");
