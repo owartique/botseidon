@@ -112,6 +112,8 @@ void detect(){
            -1 otherwise
 */
 int whereIsBeacon(){
+    float dist_min = 800;
+    int result = -1;
     rplidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
     op_result = lidar->grabScanDataHq(nodes, count);
@@ -123,21 +125,33 @@ int whereIsBeacon(){
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
                     if(angle>20.f & angle<90.f & dist>DELTA & dist<800.f){
-                        return 2;
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 2;
+                        }
                     }
                     else if(angle<340.f & angle>270.f & dist>DELTA & dist<800.f){
-                        return 1;
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 1;
+                        }
                     }
                     else if(angle>340.f | angle<20.f & dist>DELTA & dist<800.f){
-                        return 3;
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 3;
+                        }
                     }
                     else if(dist<DELTA){
-                        return 0;
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 0;
+                        }
                     }
             }
 	    }
     }
-    return -1;
+    return result;
 }
 
 /*
@@ -175,10 +189,10 @@ void move(int i){
         can->push_PropDC(20,20);
         isMoving = true;
     }
-    else if(i>3){
+    else if(i>3 | i<0){
         can->ctrl_motor(0);
         isMoving = false;
-        printf("Invalid entry, motor are turned of for safety\n");
+        printf("Invalid entry, motors are turned of for safety\n");
     }
 }
 
