@@ -31,8 +31,8 @@ void ctrlc(int)
 
 
 /* Variables declaration */
-const float DELTA   = 300.0;    // [mm]
-const float ALPHA = 45.0;     // [deg]
+const float DELTA = 300.0;    // [mm]
+const float ALPHA = 10.0;     // [deg]
 bool isMoving = false;
 bool obstacle;
 u_result     op_result;
@@ -106,9 +106,9 @@ void detect(){
 
 /*
     return 0 if beacon is closer than 300 mm
-           1 if beacon is between 300 and 500 mm on the left
-           2 if beacon is between 300 and 500 mm on the right
-           3 if beacon is between 300 and 500 mm on the front
+           1 if beacon is between 300 and 800 mm on the left
+           2 if beacon is between 300 and 800 mm on the right
+           3 if beacon is between 300 and 800 mm on the front
            -1 otherwise
 */
 int whereIsBeacon(){
@@ -122,19 +122,18 @@ int whereIsBeacon(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                    if(angle>20.f & angle<90.f & dist>DELTA & dist<500.f){
+                    if(angle>20.f & angle<90.f & dist>DELTA & dist<800.f){
                         return 2;
                     }
-                    else if(angle<340.f & angle>270.f & dist>DELTA & dist<500.f){
+                    else if(angle<340.f & angle>270.f & dist>DELTA & dist<800.f){
                         return 1;
                     }
-                    else if(angle>340.f | angle<20.f & dist>DELTA & dist<500.f){
+                    else if(angle>340.f | angle<20.f & dist>DELTA & dist<800.f){
                         return 3;
                     }
                     else if(dist<DELTA){
                         return 0;
                     }
-
             }
 	    }
     }
@@ -152,35 +151,45 @@ void move(int i){
         can->ctrl_motor(0);
         isMoving = false;
     }
-    else if(i==1){
-        can->ctrl_motor(1);
+    else if(i==1 & isMoving){
         can->push_PropDC(0,20);
     }
-    else if(i==2){
+    else if(i==1 & !isMoving){
         can->ctrl_motor(1);
+        can->push_PropDC(0,20);
+        isMoving = true;
+    }
+    else if(i==2 & isMoving){
         can->push_PropDC(20,0);
     }
-    else if(i==3){
+    else if(i==2 & !isMoving){
         can->ctrl_motor(1);
+        can->push_PropDC(20,0);
+        isMoving = true;
+    }
+    else if(i==3 & isMoving){
         can->push_PropDC(20,20);
     }
-    else{
+    else if(i==3 & !isMoving){
+        can->ctrl_motor(1);
+        can->push_PropDC(20,20);
+        isMoving = true;
+    }
+    else if(i>3){
         can->ctrl_motor(0);
-        printf("Invalid input argument, motor are STOPPED\n");
+        isMoving = false;
+        printf("Invalid entry, motor are turned of for safety\n");
     }
 }
-
-
-
 
 
 /*
     Print the welcome message on console
 */
 void welcome(){
-    printf("##############################################################################################################\n");
+    printf("##############################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
-    printf("##############################################################################################################\n");
+    printf("##############################################################\n");
     printf("\t\t I'm Mister GrayCode, please take care of me !\n");
     printf("\t\t Please do not interchange the chips on my tower/motor PWM boards !\n");
     printf("\t\t Try to respect the C-file interface when programming me because\n \t\t it will be the same in the robotic project (Q2) !\n");
@@ -190,7 +199,6 @@ void welcome(){
 int main(int argc, char** argv){
     welcome();
     lidarConfiguration();
-
 
 	can->configure();
 	can->ctrl_led(0);
