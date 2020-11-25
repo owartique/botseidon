@@ -31,13 +31,13 @@ void ctrlc(int)
 
 
 /* Variables declaration */
-const float DELTA   = 300;    // [mm]
-const float ALPHA = 10;     // [deg]
+const float DELTA   = 300.0;    // [mm]
+const float ALPHA = 45.0;     // [deg]
 bool isMoving = false;
 bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
-
+CAN *can = new CAN(CAN_BR);
 
 
 /*
@@ -77,13 +77,15 @@ bool refreshData(){
     op_result = lidar->grabScanDataHq(nodes, count);
     if (IS_OK(op_result)) {
         lidar->ascendScanData(nodes, count);
-	    for (int pos = 0; pos < (int)count ; ++pos) {
+	    for (int pos = 0; pos < (int)count ; ++pos){
        		 float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
-        	 int quality = nodes[pos].quality;
-         	 if(quality>0){
-                if(angle<=ALPHA & angle>=(360-ALPHA) & dist<DELTA){
-                    printf("obstacle\n");
+        	 float quality = nodes[pos].quality;
+         	 if(quality>0.0){
+                //printf("%f \t %f \t %f \n",angle,dist,quality);
+                //if(dist<DELTA & angle<ALPHA){
+                //printf("%f \t %f\n",angle,ALPHA);
+                if(angle<=ALPHA & (angle>=(360.0-ALPHA) | dist<DELTA)){
                     return true;
                 }
         	 }
@@ -91,6 +93,94 @@ bool refreshData(){
     }
     return false;
 }
+
+/*
+    beacon detection
+*/
+void detect(){
+    obstacle = refreshData();
+    if(isMoving & obstacle){ // si obstacle et mouvement alors stop
+        can->ctrl_led(1);
+        can->ctrl_motor(0);
+        printf("stop\n");
+        isMoving = false;
+    }
+    else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
+        can->ctrl_led(0);
+        can->ctrl_motor(1);
+        printf("moving\n");
+        isMoving = true;
+    }
+}
+
+/*
+    return 0 if beacon is closer than 300 mm
+           1 if beacon is between 300 and 500 mm on the left
+           2 if beacon is between 300 and 500 mm on the right
+           3 if beacon is between 300 and 500 mm on the front
+           -1 otherwise
+*/
+int whereIsBeacon(){
+    rplidar_response_measurement_node_hq_t nodes[8192];
+    size_t   count = _countof(nodes);
+    op_result = lidar->grabScanDataHq(nodes, count);
+    if (IS_OK(op_result)) {
+        lidar->ascendScanData(nodes, count);
+	    for (int pos = 0; pos < (int)count ; ++pos){
+       		 float angle = nodes[pos].angle_z_q14 * 90.f / (1 << 14);
+       		 float dist = nodes[pos].dist_mm_q2/4.0f;
+        	 float quality = nodes[pos].quality;
+         	 if(quality>0.0){
+                    if(angle>20.f & angle<90.f & dist>DELTA & dist<500.f){
+                        return 2;
+                    }
+                    else if(angle<340.f & angle>270.f & dist>DELTA & dist<500.f){
+                        return 1;
+                    }
+                    else if(angle>340.f | angle<20.f & dist>DELTA & dist<500.f){
+                        return 3;
+                    }
+                    else if(dist<DELTA){
+                        return 0;
+                    }
+
+            }
+	    }
+    }
+    return -1;
+}
+
+/*
+    if i = 0 stop
+       i = 1 turn left
+       i = 2 turn right
+       i = 3 move straight
+*/
+void move(int i){
+    if(i==0 & isMoving){
+        can->ctrl_motor(0);
+        isMoving = false;
+    }
+    else if(i==1){
+        can->ctrl_motor(1);
+        can->push_PropDC(0,20);
+    }
+    else if(i==2){
+        can->ctrl_motor(1);
+        can->push_PropDC(20,0);
+    }
+    else if(i==3){
+        can->ctrl_motor(1);
+        can->push_PropDC(20,20);
+    }
+    else{
+        can->ctrl_motor(0);
+        printf("Invalid input argument, motor are STOPPED\n");
+    }
+}
+
+
+
 
 
 /*
@@ -110,33 +200,27 @@ int main(int argc, char** argv){
     welcome();
     lidarConfiguration();
 
-	CAN *can;
-	can = new CAN(CAN_BR);
+
 	can->configure();
 	can->ctrl_led(0);
+	can->push_PropDC(20,20);
+	can->ctrl_motor(0);
 
 	signal(SIGINT, ctrlc);
 
     while (1){
-        obstacle = refreshData();
+        move(whereIsBeacon());
 
-        if(isMoving & obstacle){ // si obstacle et mouvement alors stop
-            can->ctrl_led(0);
-            printf("stop\n");
-            isMoving = false;
-        }
-        else if(!isMoving & !obstacle){ // si pas d'obstacle et à l'arret alors mouvement
-            can->ctrl_led(1);
-            printf("moving\n");
-            isMoving = true;
-        }
+
         if (ctrl_c_pressed){
                 break;
         }
+
     }
 	lidar->stop();
 	lidar->stopMotor();
 	can->ctrl_led(0);
+	can->ctrl_motor(0);
 
 	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
 	lidar = NULL;
