@@ -1,6 +1,6 @@
 # minibot
 
-The directory WhiteSpirit_C contains the files of the minibot (25 nov 18h)
+The directory WhiteSpirit_C contains the files of the minibot (25 nov 18h) \
 The directory GrayCode_C contains the files given by the assistants
 
 ## Useful resources
