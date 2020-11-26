@@ -31,8 +31,9 @@ void ctrlc(int)
 
 
 /* Variables declaration */
-const float DELTA = 300.0;    // [mm]
-const float ALPHA = 10.0;     // [deg]
+const float DELTA = 500.0;    // [mm]
+const float ALPHA = 20.0;     // [deg]
+const int SPEED = 25;
 bool isMoving = false;
 bool obstacle;
 u_result     op_result;
@@ -105,14 +106,14 @@ void detect(){
 }
 
 /*
-    return 0 if beacon is closer than 300 mm
-           1 if beacon is between 300 and 800 mm on the left
-           2 if beacon is between 300 and 800 mm on the right
-           3 if beacon is between 300 and 800 mm on the front
+    return 0 if beacon is closer than DELTA
+           1 if beacon is on the left
+           2 if beacon is on the right
+           3 if beacon is further than DELTA on the front
            -1 otherwise
 */
 int whereIsBeacon(){
-    float dist_min = 800;
+    float dist_min = 10000;
     int result = -1;
     rplidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
@@ -124,32 +125,29 @@ int whereIsBeacon(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                    if(angle>20.f & angle<90.f & dist>DELTA & dist<800.f){
+                    if(angle>ALPHA & angle<90.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 2;
                         }
                     }
-                    else if(angle<340.f & angle>270.f & dist>DELTA & dist<800.f){
+                    else if(angle<(360.f-ALPHA) & angle>270.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 1;
                         }
                     }
-                    else if(angle>340.f | angle<20.f & dist>DELTA & dist<800.f){
+                    else if(angle>(360.f-ALPHA) | angle<ALPHA & dist>DELTA){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 3;
                         }
                     }
-                    else if(dist<DELTA){
-                        if(dist<dist_min){
-                            dist_min = dist;
-                            result = 0;
-                        }
+                    else if(dist<DELTA){//} & angle<90.0 | angle>(180.f)){
+                        return 0;
                     }
-            }
-	    }
+         	 }
+        }
     }
     return result;
 }
@@ -164,35 +162,45 @@ void move(int i){
     if(i==0 & isMoving){
         can->ctrl_motor(0);
         isMoving = false;
+        printf("stop\n");
+    }
+    else if(i==0 & !isMoving){
+        printf("stop\n");
     }
     else if(i==1 & isMoving){
-        can->push_PropDC(0,20);
+        can->push_PropDC(0,SPEED-5);
+        printf("turn left\n");
     }
     else if(i==1 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(0,20);
+        can->push_PropDC(0,SPEED-5);
         isMoving = true;
+        printf("turn left\n");
     }
     else if(i==2 & isMoving){
-        can->push_PropDC(20,0);
+        can->push_PropDC(SPEED-5,0);
+        printf("turn right\n");
     }
     else if(i==2 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(20,0);
+        can->push_PropDC(SPEED-5,0);
         isMoving = true;
+        printf("turn right\n");
     }
     else if(i==3 & isMoving){
-        can->push_PropDC(20,20);
+        can->push_PropDC(SPEED,SPEED);
+        printf("move straight\n");
     }
     else if(i==3 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(20,20);
+        can->push_PropDC(SPEED,SPEED);
         isMoving = true;
+        printf("move straight\n");
     }
-    else if(i>3 | i<0){
+    else{
         can->ctrl_motor(0);
         isMoving = false;
-        printf("Invalid entry, motors are turned of for safety\n");
+        printf("Invalid, motors OFF for safety \n");
     }
 }
 
@@ -215,15 +223,22 @@ int main(int argc, char** argv){
     lidarConfiguration();
 
 	can->configure();
-	can->ctrl_led(0);
-	can->push_PropDC(20,20);
+	can->ctrl_led(1);
+	can->push_PropDC(SPEED,SPEED);
 	can->ctrl_motor(0);
 
 	signal(SIGINT, ctrlc);
 
+	printf("========================\n");
+	printf("=== BEACON DETECTION ===\n");
+	printf("========================\n");
+
     while (1){
         move(whereIsBeacon());
         if (ctrl_c_pressed){
+                printf("========================\n");
+                printf("========= END ==========\n");
+                printf("========================\n");
                 break;
         }
     }
