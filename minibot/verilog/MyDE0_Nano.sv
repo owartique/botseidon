@@ -62,7 +62,7 @@ input logic 		     [1:0]		GPIO_1_IN
 );
 
 //=======================================================
-//  								SPI
+//	SPI
 //=======================================================
 
 	logic spi_clk, spi_cs, spi_mosi, spi_miso;
@@ -84,7 +84,7 @@ input logic 		     [1:0]		GPIO_1_IN
 	assign GPIO_0_PI[13] = spi_cs ? 1'bz : spi_miso;  // MISO = pin 18 = GPIO_13			 
 
 //=======================================================
-//  							MINIBOT
+//	MINIBOT
 //=======================================================
 
 	logic A,B;
@@ -92,8 +92,8 @@ input logic 		     [1:0]		GPIO_1_IN
 	assign A =  GPIO_1[0];
 	assign B =  GPIO_1_IN[0];
 
-	encoder myencoder(A,B,CLOCK_50,speed);
-
+/*	encoder myencoder(A,B,CLOCK_50,speed);
+	
 
 	logic re,cs;
 	logic [31:0] wd,rd;
@@ -101,12 +101,15 @@ input logic 		     [1:0]		GPIO_1_IN
 	
 	decode mydecode(DataFromPI,re,wd,adr);
 	memory mymemory(CLOCK_50,re,cs,adr,wd,rd);
+*/
+	assign DataToPI = 32'b1111_0000_1111_0000_1111_0000_1111_0000;
+
 
 
 endmodule
 
 //=======================================================
-//  							MEMORY
+//	MEMORY
 //=======================================================
 
 	module memory (input  logic clk,re,cs,
@@ -129,13 +132,13 @@ endmodule
 	
 
 //=======================================================
-//  							ENCODER
+//	ENCODER
 //=======================================================
 	
 	module encoder(input logic A,B,clk,
 					  output logic [9:0] speed);
 
-	logic 		 sens;							// sens = 0 : sens anti-horlogique, sens = 1 : sens horlogique			  
+	logic 		 sens; // sens = 0 : sens anti-horlogique, sens = 1 : sens horlogique			  
 	logic [19:0] cnt;
 	logic [30:0] tickA, tickB, tick;
 	logic [31:0] w;
@@ -144,7 +147,7 @@ endmodule
 	always_ff @(posedge clk)
 		begin
 				cnt <= cnt+1;
-				if(cnt==20'b11110100001001000000) // si cnt = 1e6 alors 0.2 sec qui se sont écoulées
+				if(cnt==20'b11110100001001000000) // si cnt = 1e6 alors 0.2 sec se sont écoulées
 					begin
 							tick <= tickA + tickB;
 							w <= {sens, tick};
@@ -171,7 +174,7 @@ endmodule
 	endmodule
 	
 //=======================================================
-//  							DECODE
+//	DECODE
 //=======================================================
 
 module decode(input  logic [31:0] msg,
