@@ -95,12 +95,12 @@ input logic 		     [1:0]		GPIO_1_IN
 	encoder myencoder(A,B,CLOCK_50,speed);
 
 
-	logic re,cs;
-	logic [31:0] wd,rd;
-	logic [4:0] adr;
-	
-	decode mydecode(DataFromPI,re,wd,adr);
-	memory mymemory(CLOCK_50,re,cs,adr,wd,rd);
+	logic we,re,cs;
+	logic [31:0] a,wd,rd;
+
+	memory mymemory(CLOCK_50,we,re,cs,a,wd,rd);
+
+
 
 
 endmodule
@@ -109,25 +109,21 @@ endmodule
 //  							MEMORY
 //=======================================================
 
-	module memory (input  logic clk,re,cs,
-						input  logic [4:0] adr,
-						input  logic [31:0] wd,
+	module memory (input logic  clk,we,re,cs,
+						input logic  [31:0] a,wd,
 						output logic [31:0] rd);
 		
-	logic [31:0] RAM [4:0];
+	logic [31:0] RAM [10:0];
 
 
 	always_ff @(posedge clk)
-	begin
-		if(cs & re) rd <= RAM[adr];
-		else if(cs & ~re) RAM[adr] <= wd;
-		else rd <= 31'bx;	
-	end	
-	
+		if(cs & we) RAM[a] <= wd;
+		else if(cs & re) rd <= RAM[a];
+		
 	endmodule
 	
-	
 
+	
 //=======================================================
 //  							ENCODER
 //=======================================================
@@ -169,19 +165,3 @@ endmodule
 
 							
 	endmodule
-	
-//=======================================================
-//  							DECODE
-//=======================================================
-
-module decode(input  logic [31:0] msg,
-				  output logic re,
-				  output logic [11:0] wd,
-				  output logic [4:0] adr);
-				  
-assign re = msg[31];
-assign adr = msg[30:26];
-assign wd = re ? 12'bx : msg[25:14];
-
-endmodule
- 
