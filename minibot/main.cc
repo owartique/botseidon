@@ -32,7 +32,7 @@ void ctrlc(int)
 
 /* Variables declaration */
 const float DELTA = 500.0;    // [mm]
-const float ALPHA = 20.0;     // [deg]
+const float ALPHA = 10.0;     // [deg]
 const int SPEED = 25;
 bool isMoving = false;
 bool obstacle;
@@ -125,13 +125,13 @@ int whereIsBeacon(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                    if(angle>ALPHA & angle<90.f){
+                    if(angle>ALPHA & angle<180.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 2;
                         }
                     }
-                    else if(angle<(360.f-ALPHA) & angle>270.f){
+                    else if(angle<(360.f-ALPHA) & angle>180.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 1;
@@ -229,16 +229,9 @@ int main(int argc, char** argv){
 
 	signal(SIGINT, ctrlc);
 
-	printf("========================\n");
-	printf("=== BEACON DETECTION ===\n");
-	printf("========================\n");
-
     while (1){
         move(whereIsBeacon());
         if (ctrl_c_pressed){
-                printf("========================\n");
-                printf("========= END ==========\n");
-                printf("========================\n");
                 break;
         }
     }
