@@ -120,10 +120,11 @@ endmodule
    // on ajoute un bias de 32768 comme ça pas besoin de s'emmerder avec le signe
 	// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
 	// mais en additionnant avec 32768 on s'assure qu'il est positif
+	// on suppose par contre qu'il peut avoir max 32677 pulse en 0.02 sec sinon overflow
 	// Il faudra en tenir compte dans le code en C 
-			assign tick = pulse + 16'b10000000_00000000;
+			assign tick = pulse;
 			cnt = 32'b0;
-			pulse = 16'b0;
+			pulse = 16'b0+16'b10000000_00000000;
 		end
 		else begin
 			// a chaque changement d'état de A, si A=B alors cela veut dire qu'on tourne en sens horlogique				  
