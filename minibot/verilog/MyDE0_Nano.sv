@@ -87,24 +87,67 @@ input logic 		     [1:0]		GPIO_1_IN
 //	MINIBOT
 //=======================================================
 
-	logic A,B;
-
-	assign A =  GPIO_1[0];
-	assign B =  GPIO_1_IN[0];
-
-/*	encoder myencoder(A,B,CLOCK_50,speed);
+	logic leftA, leftB, rightA, rightB;
+	logic [15:0] leftPulse, rightPulse;
 	
-
-	logic re,cs;
-	logic [31:0] wd,rd;
-	logic [4:0] adr;
+	assign leftA =  GPIO_1[0];
+	assign leftB =  GPIO_1_IN[0];
 	
-	decode mydecode(DataFromPI,re,wd,adr);
-	memory mymemory(CLOCK_50,re,cs,adr,wd,rd);
-*/
-	assign DataToPI = 32'b1111_0000_1111_0000_1111_0000_1111_0000;
+	assign rightA =  GPIO_1[2];
+	assign rightB =  GPIO_1[1];
+	
+	encoder leftEncoder(leftA,leftB,CLOCK_50,leftPulse);
+	encoder rightEncoder(rightA,rightB,CLOCK_50,rightPulse);
+
+	assign DataToPI = {leftPulse,rightPulse};
+	
+	
+endmodule
 
 
+//=======================================================
+//	ENCODER
+//=======================================================
+	
+	module encoder(input logic A,B,clk,
+					  output logic [15:0] tick);
+					  
+	logic [15:0] pulse;
+	logic [31:0] cnt;
+	
+	always_ff @(posedge clk) begin
+		if (cnt==32'b11110100001001000000)begin
+   // on ajoute un bias de 32768 comme ça pas besoin de s'emmerder avec le signe
+	// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
+	// mais en additionnant avec 32768 on s'assure qu'il est positif
+	// Il faudra en tenir compte dans le code en C 
+			assign tick = pulse + 16'b10000000_00000000;
+			cnt = 32'b0;
+			pulse = 16'b0;
+		end
+		else begin
+			// a chaque changement d'état de A, si A=B alors cela veut dire qu'on tourne en sens horlogique				  
+			always_ff @(posedge A, negedge A)begin
+				pulse = (A==B) ? pulse+1'b1 : pulse-1'b1; // A leads B for counter clockwise rotation (cfr datasheet)
+			end
+			cnt = cnt + 1'b1;
+		end
+	end
+								
+	endmodule
+	
+//=======================================================
+//	DECODE
+//=======================================================
+
+module decode(input  logic [31:0] msg,
+				  output logic re,
+				  output logic [11:0] wd,
+				  output logic [4:0] adr);
+				  
+assign re = msg[31];
+assign adr = msg[30:26];
+assign wd = re ? 12'bx : msg[25:14];
 
 endmodule
 
@@ -131,60 +174,5 @@ endmodule
 	
 	
 
-//=======================================================
-//	ENCODER
-//=======================================================
-	
-	module encoder(input logic A,B,clk,
-					  output logic [9:0] speed);
 
-	logic 		 sens; // sens = 0 : sens anti-horlogique, sens = 1 : sens horlogique			  
-	logic [19:0] cnt;
-	logic [30:0] tickA, tickB, tick;
-	logic [31:0] w;
-
-
-	always_ff @(posedge clk)
-		begin
-				cnt <= cnt+1;
-				if(cnt==20'b11110100001001000000) // si cnt = 1e6 alors 0.2 sec se sont écoulées
-					begin
-							tick <= tickA + tickB;
-							w <= {sens, tick};
-							cnt <= 0;
-							tick <= 0;
-					end
-		end
-
-
-	always_ff @(posedge A)
-	begin
-		tickA <= tickA + 1;
-		if (A & ~B) sens <= 1'b1;
-	end
-	always_ff @(posedge B)
-	begin
-		tickB <= tickB + 1;
-		if (~A & B) sens <= 1'b0;
-	end
-
-	assign speed = w;
-
-							
-	endmodule
-	
-//=======================================================
-//	DECODE
-//=======================================================
-
-module decode(input  logic [31:0] msg,
-				  output logic re,
-				  output logic [11:0] wd,
-				  output logic [4:0] adr);
-				  
-assign re = msg[31];
-assign adr = msg[30:26];
-assign wd = re ? 12'bx : msg[25:14];
-
-endmodule
  
