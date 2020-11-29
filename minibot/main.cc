@@ -1,10 +1,13 @@
 #include <cstdio>
 #include <time.h>
+#include <string.h>
 
 #include <wiringPiSPI.h>
 #include "IO/COM/CAN/CAN.hh"
 #include "IO/COM/SPI/Specific/SPI_CAN.hh"
 #include "IO/COM/SPI/SPI.hh"
+
+#include "IO/COM/SPI/Specific/SPI_DE0.hh"
 
 #include "/home/pi/slamware/rplidar_sdk-release-v1.12.0/sdk/sdk/include/rplidar.h"
 #include "/home/pi/slamware/rplidar_sdk-release-v1.12.0/sdk/sdk/include/rplidar_driver.h"
@@ -32,13 +35,16 @@ void ctrlc(int)
 
 /* Variables declaration */
 const float DELTA = 500.0;    // [mm]
-const float ALPHA = 10.0;     // [deg]
+const float ALPHA = 15.0;     // [deg]
 const int SPEED = 25;
+
 bool isMoving = false;
 bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
 CAN *can = new CAN(CAN_BR);
+SPI_DE0 *spi = new SPI_DE0(0,500000);
+
 
 
 /*
@@ -61,6 +67,16 @@ void lidarConfiguration(){
 	rp::standalone::rplidar::RplidarScanMode scanMode;
 	lidar->startMotor();
 	lidar->startScan(0,1);
+}
+
+/*
+    Call this function when lidar is not used anymore
+*/
+void stopLidar(){
+    lidar->stop();
+    lidar->stopMotor();
+    rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
+    lidar = NULL;
 }
 
 /*
@@ -153,6 +169,20 @@ int whereIsBeacon(){
 }
 
 /*
+    encoder
+    Lire le SPI qui retourne un unsigned integer
+    Convertir le unsigned integer en binaire
+    Extraire les 16 premiers bits pour la roue gauche et les 16 derniers bit pour la roue droite
+    Convertir les bits en int
+    Soustraire le biais de 32678
+    Diviser par (0.02*PPR) pour avoir le nombre rotations par seconde
+    Mutliplier par 2pi pour avoir des radians par secondes
+*/
+void encoder(){
+
+}
+
+/*
     if i = 0 stop
        i = 1 turn left
        i = 2 turn right
@@ -168,22 +198,22 @@ void move(int i){
         printf("stop\n");
     }
     else if(i==1 & isMoving){
-        can->push_PropDC(0,SPEED-5);
+        can->push_PropDC(0,SPEED);
         printf("turn left\n");
     }
     else if(i==1 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(0,SPEED-5);
+        can->push_PropDC(0,SPEED);
         isMoving = true;
         printf("turn left\n");
     }
     else if(i==2 & isMoving){
-        can->push_PropDC(SPEED-5,0);
+        can->push_PropDC(SPEED,0);
         printf("turn right\n");
     }
     else if(i==2 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(SPEED-5,0);
+        can->push_PropDC(SPEED,0);
         isMoving = true;
         printf("turn right\n");
     }
@@ -230,17 +260,21 @@ int main(int argc, char** argv){
 	signal(SIGINT, ctrlc);
 
     while (1){
-        move(whereIsBeacon());
+        //move(whereIsBeacon());
+
+        encoder();
+        printf("%f \t %f \n",*l_speed,*r_speed);
+
         if (ctrl_c_pressed){
                 break;
         }
     }
-	lidar->stop();
-	lidar->stopMotor();
+
+
 	can->ctrl_led(0);
 	can->ctrl_motor(0);
+    stopLidar();
 
-	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
-	lidar = NULL;
+
 	return 0;
 }
