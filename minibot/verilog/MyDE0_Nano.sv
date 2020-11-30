@@ -96,14 +96,23 @@ input logic 		     [1:0]		GPIO_1_IN
 	assign rightA =  GPIO_1[2];
 	assign rightB =  GPIO_1[1];
 	
-	encoder leftEncoder(leftA,leftB,CLOCK_50,leftPulse);
-	encoder rightEncoder(rightA,rightB,CLOCK_50,rightPulse);
+	logic clock_div;
+	logic [31:0] divider;
+	assign divider = 32'b11110100001001000000;
 	
-	// en fonction du message reçu on assigne la donnée à envoyer
+	// on divise la clock par 1e6 pour avoir une clock de 50Hz (période de 0.02 sec)
+	clockdivider myclockdivider(CLOCL_50,divider,clock_div);
+	// on utilise cette clock de 50Hz pour calculer le nombre de pulse pendant 0.02 sec
+	encoder leftEncoder(leftA,leftB,clock_div,leftPulse);
+	encoder rightEncoder(rightA,rightB,clock_div,rightPulse);
+	
+	// en fonction du message reçu du raspberry on assigne la donnée à envoyer
 	always_comb begin
 		case(DataFromPI)
-			31'b1  : DataToPI = leftPulse;
-			31'b10 : DataToPI = rightPulse;
+			31'b1   : DataToPI = leftPulse;
+			31'b10  : DataToPI = rightPulse;
+			default : DataToPI = 32'bx;
+		endcase
 	end
 	
 	
@@ -114,36 +123,48 @@ endmodule
 //	ENCODER
 //=======================================================
 	
-	module encoder(input logic  A,B,clk,
+	module encoder(input logic  A,B,clk_div,
 					   output logic [31:0] tick);
 					  
 	logic [31:0] pulse;
-	logic [31:0] cnt;
 	
-	always_ff @(posedge clk) begin
-		if (cnt==32'b11110100001001000000)begin
-			// on ajoute un bias de 2147483647 comme ça pas besoin de s'emmerder avec le signe
-			// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
-			// mais en additionnant avec 2147483647 on s'assure qu'il est positif
-			// on suppose par contre qu'il peut avoir max 2147483647 pulse en 0.02 sec sinon overflow
-			// Il faudra en tenir compte dans le code en C 
-			assign tick = pulse;
-			cnt = 32'b0;
-			pulse = 32'b0111_1111_1111_1111_1111_1111_1111_1111;
-		end
-		else begin
-			// a chaque changement d'état de A, si A=B alors cela veut dire qu'on tourne en sens horlogique				  
-			always_ff @(posedge A, negedge A)begin
-				pulse = (A==B) ? pulse+1'b1 : pulse-1'b1; // A leads B for counter clockwise rotation (cfr datasheet)
-			end
-			cnt = cnt+1'b1;
-		end
+	always_ff @(posedge clk_div) begin
+		// on ajoute un bias de 2147483647 comme ça pas besoin de s'emmerder avec le signe
+		// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
+		// mais en additionnant avec 2147483647 on s'assure qu'il est positif
+		// on suppose par contre qu'il peut avoir max 2147483647 pulse en 0.02 sec sinon overflow
+		// Il faudra en tenir compte dans le code en C 
+		pulse = 32'b0111_1111_1111_1111_1111_1111_1111_1111;
 	end
+	
+	// a chaque changement d'état de A, si A=B alors cela veut dire qu'on tourne en sens horlogique				  
+	always_ff @(posedge A, negedge A)begin
+		pulse = (A==B) ? pulse+1'b1 : pulse-1'b1; // A leads B for counter clockwise rotation (cfr datasheet)
+	end
+	
+	assign tick = pulse;
 						
 	endmodule
   
-
+ 
+//=======================================================
+//	CLOCK DIVIDER
+//=======================================================
 	
+	module clockdivider(input logic clk,
+							  input logic [31:0] divider,
+							  output logic clk_div);
+	
+	logic [31:0] cnt;
+	
+	always_ff @(posedge clk) begin
+		if(cnt==divider)begin
+			cnt <= 0;
+			clk_div <= ~clk_div;
+		end	
+	end
+	
+	endmodule
 	
 
 
