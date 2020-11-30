@@ -38,6 +38,9 @@ const float DELTA = 500.0;    // [mm]
 const float ALPHA = 15.0;     // [deg]
 const int SPEED = 25;
 
+float leftSpeed = 0.0;
+float rightSpeed = 0.0;
+
 bool isMoving = false;
 bool obstacle;
 u_result     op_result;
@@ -170,16 +173,18 @@ int whereIsBeacon(){
 
 /*
     encoder
-    Lire le SPI qui retourne un unsigned integer
-    Convertir le unsigned integer en binaire
-    Extraire les 16 premiers bits pour la roue gauche et les 16 derniers bit pour la roue droite
-    Convertir les bits en int
-    Soustraire le biais de 32678
-    Diviser par (0.02*PPR) pour avoir le nombre rotations par seconde
-    Mutliplier par 2pi pour avoir des radians par secondes
 */
 void encoder(){
-
+    const int LEFT_ENCODER_ADR  = 1;
+    const int RIGHT_ENCODER_ADR = 2;
+    const float PI = 3.141592654;
+    const int PPR = 1024;
+    // lire les adresses correspondant aux encodeurs gauche et droit
+    unsigned int leftEncoder  = spi->readSPI(LEFT_ENCODER_ADR);
+    unsigned int rightEncoder = spi->readSPI(RIGHT_ENCODER_ADR);
+    // calculer la vitesse en rad/s en tenant compte du biais
+    leftSpeed = 2*pi*(leftEncoder-2147483647)/(0.02*PPR);
+    rightSpeed = 2*pi*(rightEncoder-2147483647)/(0.02*PPR);
 }
 
 /*
@@ -263,7 +268,7 @@ int main(int argc, char** argv){
         //move(whereIsBeacon());
 
         encoder();
-        printf("%f \t %f \n",*l_speed,*r_speed);
+        printf("%f \t %f \n",leftSpeed,righSpeed);
 
         if (ctrl_c_pressed){
                 break;
