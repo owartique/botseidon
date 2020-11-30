@@ -88,7 +88,7 @@ input logic 		     [1:0]		GPIO_1_IN
 //=======================================================
 
 	logic leftA, leftB, rightA, rightB;
-	logic [15:0] leftPulse, rightPulse;
+	logic [31:0] leftPulse, rightPulse;
 	
 	assign leftA =  GPIO_1[0];
 	assign leftB =  GPIO_1_IN[0];
@@ -98,8 +98,13 @@ input logic 		     [1:0]		GPIO_1_IN
 	
 	encoder leftEncoder(leftA,leftB,CLOCK_50,leftPulse);
 	encoder rightEncoder(rightA,rightB,CLOCK_50,rightPulse);
-
-	assign DataToPI = {leftPulse,rightPulse};
+	
+	// en fonction du message reçu on assigne la donnée à envoyer
+	always_comb begin
+		case(DataFromPI)
+			31'b1  : DataToPI = leftPulse;
+			31'b10 : DataToPI = rightPulse;
+	end
 	
 	
 endmodule
@@ -109,69 +114,35 @@ endmodule
 //	ENCODER
 //=======================================================
 	
-	module encoder(input logic A,B,clk,
-					  output logic [15:0] tick);
+	module encoder(input logic  A,B,clk,
+					   output logic [31:0] tick);
 					  
-	logic [15:0] pulse;
+	logic [31:0] pulse;
 	logic [31:0] cnt;
 	
 	always_ff @(posedge clk) begin
 		if (cnt==32'b11110100001001000000)begin
-   // on ajoute un bias de 32768 comme ça pas besoin de s'emmerder avec le signe
-	// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
-	// mais en additionnant avec 32768 on s'assure qu'il est positif
-	// on suppose par contre qu'il peut avoir max 32677 pulse en 0.02 sec sinon overflow
-	// Il faudra en tenir compte dans le code en C 
+			// on ajoute un bias de 2147483647 comme ça pas besoin de s'emmerder avec le signe
+			// par exemple si le robot roule en arrière on pourrait avoir un nombre de tick négatif
+			// mais en additionnant avec 2147483647 on s'assure qu'il est positif
+			// on suppose par contre qu'il peut avoir max 2147483647 pulse en 0.02 sec sinon overflow
+			// Il faudra en tenir compte dans le code en C 
 			assign tick = pulse;
 			cnt = 32'b0;
-			pulse = 16'b0+16'b10000000_00000000;
+			pulse = 32'b0111_1111_1111_1111_1111_1111_1111_1111;
 		end
 		else begin
 			// a chaque changement d'état de A, si A=B alors cela veut dire qu'on tourne en sens horlogique				  
 			always_ff @(posedge A, negedge A)begin
 				pulse = (A==B) ? pulse+1'b1 : pulse-1'b1; // A leads B for counter clockwise rotation (cfr datasheet)
 			end
-			cnt = cnt + 1'b1;
+			cnt = cnt+1'b1;
 		end
 	end
-								
+						
 	endmodule
-	
-//=======================================================
-//	DECODE
-//=======================================================
+  
 
-module decode(input  logic [31:0] msg,
-				  output logic re,
-				  output logic [11:0] wd,
-				  output logic [4:0] adr);
-				  
-assign re = msg[31];
-assign adr = msg[30:26];
-assign wd = re ? 12'bx : msg[25:14];
-
-endmodule
-
-//=======================================================
-//	MEMORY
-//=======================================================
-
-	module memory (input  logic clk,re,cs,
-						input  logic [4:0] adr,
-						input  logic [31:0] wd,
-						output logic [31:0] rd);
-		
-	logic [31:0] RAM [4:0];
-
-
-	always_ff @(posedge clk)
-	begin
-		if(cs & re) rd <= RAM[adr];
-		else if(cs & ~re) RAM[adr] <= wd;
-		else rd <= 31'bx;	
-	end	
-	
-	endmodule
 	
 	
 
