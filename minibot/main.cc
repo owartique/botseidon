@@ -177,9 +177,10 @@ int whereIsBeacon(){
 void encoder(){
     const int LEFT_ENCODER_ADR  = 0;
     const int RIGHT_ENCODER_ADR = 1;
-    const int PPR = 1024;
+    const int PPR  = 1024;
     const int BIAS = 2147483647; 
     const float PI = 3.141592654;
+    const float R  = 0.03;
     const float DT = 0.02; // temps entre chaque prise de donnée des encodeurs = 50MHz/1e6 = 0.02 secondes
 
     // De ce que j'ai compris, le premier argument est le channel (0 ou 1) car le raspberry a deux channel SPI
@@ -190,15 +191,15 @@ void encoder(){
     /////spi->writeSPI(0,LEFT_ENCODER_ADR);
     // Grâce au case(DataFromPI) dans le module sv le DE0 assigne que le DataToPI est le nombre de tick de la roue gauche
     // On lit ensuite ce que le DE0 renvoie
-    unsigned int leftEncoder  = spi->readSPI(0);
+    unsigned int leftEncoder  = spi->readSPIolivier(0);
     // même chose pour la roue droite
     /////spi->writeSPI(0,RIGHT_ENCODER_ADR);
-    unsigned int rightEncoder  = spi->readSPI(0);
+    unsigned int rightEncoder  = spi->readSPIolivier(1);
     // calcule de la vitesse en rad/s en tenant compte du biais introduit dans le DE0
-    leftSpeed = leftEncoder;
-    rightSpeed = rightEncoder;
     //leftSpeed = 2*PI*(leftEncoder)/(0.02*PPR);
     //rightSpeed = 2*PI*(rightEncoder)/(0.02*PPR);
+    leftSpeed = 2*PI*R*((leftEncoder-BIAS)/PPR);
+    rightSpeed = 2*PI*R*((rightEncoder-BIAS)/PPR);
 }
 
 /*
@@ -273,15 +274,16 @@ int main(int argc, char** argv){
 
 	can->configure();
 	can->ctrl_led(1);
-	can->push_PropDC(SPEED,SPEED);
-	can->ctrl_motor(0);
+	can->ctrl_motor(1);
+    can->push_PropDC(20,20);
 
 	signal(SIGINT, ctrlc);
 
     while (1){
-        move(whereIsBeacon());
+        //move(whereIsBeacon());
 
-        //printf("%u \n",spi->read(0));
+        encoder();
+        printf("%f \t %f \n",leftSpeed,rightSpeed);
 
         if (ctrl_c_pressed){
                 break;
