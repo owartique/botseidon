@@ -175,16 +175,30 @@ int whereIsBeacon(){
     encoder
 */
 void encoder(){
-    const int LEFT_ENCODER_ADR  = 1;
-    const int RIGHT_ENCODER_ADR = 2;
-    const float PI = 3.141592654;
+    const int LEFT_ENCODER_ADR  = 0;
+    const int RIGHT_ENCODER_ADR = 1;
     const int PPR = 1024;
-    // lire les adresses correspondant aux encodeurs gauche et droit
-    unsigned int leftEncoder  = spi->readSPI(LEFT_ENCODER_ADR);
-    unsigned int rightEncoder = spi->readSPI(RIGHT_ENCODER_ADR);
-    // calculer la vitesse en rad/s en tenant compte du biais
-    leftSpeed = 2*pi*(leftEncoder-2147483647)/(0.02*PPR);
-    rightSpeed = 2*pi*(rightEncoder-2147483647)/(0.02*PPR);
+    const int BIAS = 2147483647; 
+    const float PI = 3.141592654;
+    const float DT = 0.02; // temps entre chaque prise de donnée des encodeurs = 50MHz/1e6 = 0.02 secondes
+
+    // De ce que j'ai compris, le premier argument est le channel (0 ou 1) car le raspberry a deux channel SPI
+    // ici on va toujours utiliser la channel 0
+    // Le deuxième argument est la donnée qu'on veut envoyer. C'est un int et la fonction writeSPI va le transformer en bytes donc 
+    // pas besoin de s'emmerder avec la conversion. 
+    // Ici on envoie la donnée LEFT_ENCODER_ADR = 1. Le DE0 Nano va recevoir le chiffre de 32bits 0000 0000 0000 0000 0000 0000 0000 0001
+    /////spi->writeSPI(0,LEFT_ENCODER_ADR);
+    // Grâce au case(DataFromPI) dans le module sv le DE0 assigne que le DataToPI est le nombre de tick de la roue gauche
+    // On lit ensuite ce que le DE0 renvoie
+    unsigned int leftEncoder  = spi->readSPI(0);
+    // même chose pour la roue droite
+    /////spi->writeSPI(0,RIGHT_ENCODER_ADR);
+    unsigned int rightEncoder  = spi->readSPI(0);
+    // calcule de la vitesse en rad/s en tenant compte du biais introduit dans le DE0
+    leftSpeed = leftEncoder;
+    rightSpeed = rightEncoder;
+    //leftSpeed = 2*PI*(leftEncoder)/(0.02*PPR);
+    //rightSpeed = 2*PI*(rightEncoder)/(0.02*PPR);
 }
 
 /*
@@ -265,10 +279,9 @@ int main(int argc, char** argv){
 	signal(SIGINT, ctrlc);
 
     while (1){
-        //move(whereIsBeacon());
+        move(whereIsBeacon());
 
-        encoder();
-        printf("%f \t %f \n",leftSpeed,righSpeed);
+        //printf("%u \n",spi->read(0));
 
         if (ctrl_c_pressed){
                 break;
