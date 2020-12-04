@@ -27,26 +27,26 @@ void ctrlc(int)
 #include <unistd.h>
 #include <stdlib.h>
 
-
 #define CAN_BR 125e3
 
 
-
-
 /* Variables declaration */
-const float DELTA = 500.0;    // [mm]
-const float ALPHA = 15.0;     // [deg]
-const int SPEED = 25;
+const float DELTA = 500.0;   // [mm]
+const float ALPHA = 15.0;    // [deg]
+const int DC = 25;           // dutycycle of the propulsion motors
 
-float leftSpeed = 0.0;
-float rightSpeed = 0.0;
+float leftSpeedLinear = 0.0;    // linear speed of the left wheel [m/s]
+float rightSpeedLinear = 0.0;   // linear speed of the right wheel [m/s]
 
-bool isMoving = false;
+float leftSpeedAngular = 0.0;   // angular speed of the left wheel [rad/s]
+float rightSpeedAngular = 0.0;  // angular speed of the right wheel [rad/s]
+
+bool isMoving = false;          // variable to keep track if the minibot is moving or not
 bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
-CAN *can = new CAN(CAN_BR);
-SPI_DE0 *spi = new SPI_DE0(0,500000);
+CAN *can = new CAN(CAN_BR);             // pointer to CAN
+SPI_DE0 *spi = new SPI_DE0(0,500000);   // pointer to SPI
 
 
 
@@ -74,6 +74,8 @@ void lidarConfiguration(){
 
 /*
     Call this function when lidar is not used anymore
+        * stop the motor
+        * get rid of the driver
 */
 void stopLidar(){
     lidar->stop();
@@ -83,9 +85,9 @@ void stopLidar(){
 }
 
 /*
-    Va chercher les donnees du dernier tour et renvoie true si il y a au moins un obstacle
+    Return true if at least one obstacle in the last rotation of the lidar
 */
-bool refreshData(){
+bool refreshData(float ang, float delta){
     rplidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
     op_result = lidar->grabScanDataHq(nodes, count);
@@ -96,7 +98,7 @@ bool refreshData(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                if(angle<=ALPHA & (angle>=(360.0-ALPHA) | dist<DELTA)){
+                if(angle<=ang & (angle>=(360.0-ang) | dist<delta)){
                     return true;
                 }
         	 }
@@ -131,7 +133,7 @@ void detect(){
            3 if beacon is further than DELTA on the front
            -1 otherwise
 */
-int whereIsBeacon(){
+int whereIsBeacon(float ang, float delta){
     float dist_min = 10000;
     int result = -1;
     rplidar_response_measurement_node_hq_t nodes[8192];
@@ -144,25 +146,25 @@ int whereIsBeacon(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                    if(angle>ALPHA & angle<180.f){
+                    if(angle>ang & angle<180.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 2;
                         }
                     }
-                    else if(angle<(360.f-ALPHA) & angle>180.f){
+                    else if(angle<(360.f-ang) & angle>180.f){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 1;
                         }
                     }
-                    else if(angle>(360.f-ALPHA) | angle<ALPHA & dist>DELTA){
+                    else if(angle>(360.f-ang) | angle<ALPHA & dist>delta){
                         if(dist<dist_min){
                             dist_min = dist;
                             result = 3;
                         }
                     }
-                    else if(dist<DELTA){//} & angle<90.0 | angle>(180.f)){
+                    else if(dist<delta){//} & angle<90.0 | angle>(180.f)){
                         return 0;
                     }
          	 }
@@ -177,29 +179,23 @@ int whereIsBeacon(){
 void encoder(){
     const int LEFT_ENCODER_ADR  = 0;
     const int RIGHT_ENCODER_ADR = 1;
-    const int PPR  = 1024;
-    const int BIAS = 2147483647; 
+    const int PPR  = 1024;          // pulse per revolution (see datasheet)
+    const int BIAS = 1023;          // 0000001111111111 in binary
     const float PI = 3.141592654;
-    const float R  = 0.03;
-    const float DT = 0.02; // temps entre chaque prise de donnée des encodeurs = 50MHz/1e6 = 0.02 secondes
+    const float R  = 0.03;          // wheel radius [m]
+    const float DT = 0.02;          // refresh rate of 0.02 seconds or 50 Hz
 
-    // De ce que j'ai compris, le premier argument est le channel (0 ou 1) car le raspberry a deux channel SPI
-    // ici on va toujours utiliser la channel 0
-    // Le deuxième argument est la donnée qu'on veut envoyer. C'est un int et la fonction writeSPI va le transformer en bytes donc 
-    // pas besoin de s'emmerder avec la conversion. 
-    // Ici on envoie la donnée LEFT_ENCODER_ADR = 1. Le DE0 Nano va recevoir le chiffre de 32bits 0000 0000 0000 0000 0000 0000 0000 0001
-    /////spi->writeSPI(0,LEFT_ENCODER_ADR);
-    // Grâce au case(DataFromPI) dans le module sv le DE0 assigne que le DataToPI est le nombre de tick de la roue gauche
-    // On lit ensuite ce que le DE0 renvoie
-    unsigned int leftEncoder  = spi->readSPIolivier(0);
-    // même chose pour la roue droite
-    /////spi->writeSPI(0,RIGHT_ENCODER_ADR);
-    unsigned int rightEncoder  = spi->readSPIolivier(1);
-    // calcule de la vitesse en rad/s en tenant compte du biais introduit dans le DE0
-    //leftSpeed = 2*PI*(leftEncoder)/(0.02*PPR);
-    //rightSpeed = 2*PI*(rightEncoder)/(0.02*PPR);
-    leftSpeed = 2*PI*R*((leftEncoder-BIAS)/PPR);
-    rightSpeed = 2*PI*R*((rightEncoder-BIAS)/PPR);
+    // receive data from DE0 via SPI
+    unsigned int leftEncoder  = spi->readSPIolivier(LEFT_ENCODER_ADR);
+    unsigned int rightEncoder = spi->readSPIolivier(RIGHT_ENCODER_ADR);
+
+    //linear speed [m/s]
+    leftSpeedLinear  = 2*PI*R*((leftEncoder-BIAS)/(0.02*PPR));
+    rightSpeedLinear = 2*PI*R*((rightEncoder-BIAS)/(0.02*PPR));
+
+    // angular speed [rad/s]
+    leftSpeedAngular  = leftSpeed_linear/R;
+    rightSpeedAngular = rightSpeed_linear/R;
 }
 
 /*
@@ -207,50 +203,51 @@ void encoder(){
        i = 1 turn left
        i = 2 turn right
        i = 3 move straight
+    Print the movements on the console is verbose is true
 */
-void move(int i){
+void move(int i, bool verbose){
     if(i==0 & isMoving){
         can->ctrl_motor(0);
         isMoving = false;
-        printf("stop\n");
+        if(verbose) printf("stop\n");
     }
     else if(i==0 & !isMoving){
-        printf("stop\n");
+        if(verbose) printf("stop\n");
     }
     else if(i==1 & isMoving){
-        can->push_PropDC(0,SPEED);
-        printf("turn left\n");
+        can->push_PropDC(0,DC);
+        if(verbose) printf("turn left\n");
     }
     else if(i==1 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(0,SPEED);
+        can->push_PropDC(0,DC);
         isMoving = true;
-        printf("turn left\n");
+        if(verbose) printf("turn left\n");
     }
     else if(i==2 & isMoving){
-        can->push_PropDC(SPEED,0);
-        printf("turn right\n");
+        can->push_PropDC(DC,0);
+        if(verbose) printf("turn right\n");
     }
     else if(i==2 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(SPEED,0);
+        can->push_PropDC(DC,0);
         isMoving = true;
-        printf("turn right\n");
+        if(verbose) printf("turn right\n");
     }
     else if(i==3 & isMoving){
-        can->push_PropDC(SPEED,SPEED);
-        printf("move straight\n");
+        can->push_PropDC(DC,DC);
+        if(verbose) printf("move straight\n");
     }
     else if(i==3 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(SPEED,SPEED);
+        can->push_PropDC(DC,DC);
         isMoving = true;
-        printf("move straight\n");
+        if(verbose) printf("move straight\n");
     }
     else{
         can->ctrl_motor(0);
         isMoving = false;
-        printf("Invalid, motors OFF for safety \n");
+        if(verbose) printf("Invalid, motors OFF\n");
     }
 }
 
@@ -259,9 +256,9 @@ void move(int i){
     Print the welcome message on console
 */
 void welcome(){
-    printf("##############################################################\n");
+    printf("#############################################################################################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
-    printf("##############################################################\n");
+    printf("#############################################################################################################################\n");
     printf("\t\t I'm Mister GrayCode, please take care of me !\n");
     printf("\t\t Please do not interchange the chips on my tower/motor PWM boards !\n");
     printf("\t\t Try to respect the C-file interface when programming me because\n \t\t it will be the same in the robotic project (Q2) !\n");
@@ -269,21 +266,21 @@ void welcome(){
 
 
 int main(int argc, char** argv){
-    welcome();
+    //welcome();
     lidarConfiguration();
 
 	can->configure();
 	can->ctrl_led(1);
 	can->ctrl_motor(1);
-    can->push_PropDC(20,20);
+    can->push_PropDC(DC,DC);
 
 	signal(SIGINT, ctrlc);
 
     while (1){
-        //move(whereIsBeacon());
+        //move(whereIsBeacon(ALPHA,DELTA),true);
 
         encoder();
-        printf("%f \t %f \n",leftSpeed,rightSpeed);
+        printf("%f \t %f \n",leftSpeedLinear,rightSpeedLinear);
 
         if (ctrl_c_pressed){
                 break;
