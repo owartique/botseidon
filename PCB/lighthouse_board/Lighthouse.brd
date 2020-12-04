@@ -206,6 +206,8 @@ BOTSEIDON</text>
 <dimension x1="0" y1="0" x2="0" y2="70.485" x3="-12.065" y3="35.2425" textsize="1.27" textratio="9" layer="47"/>
 <dimension x1="53.34" y1="70.485" x2="0" y2="70.485" x3="26.67" y3="81.28" textsize="1.27" textratio="9" layer="47"/>
 <dimension x1="50.8" y1="3.175" x2="53.34" y2="3.175" x3="52.07" y3="-10.795" textsize="1.27" textratio="9" layer="47"/>
+<text x="48.26" y="44.45" size="1.27" layer="25">+5V</text>
+<text x="48.26" y="59.055" size="1.27" layer="25">GND</text>
 </plain>
 <libraries>
 <library name="adafruit">

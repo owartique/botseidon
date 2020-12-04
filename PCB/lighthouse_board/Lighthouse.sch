@@ -5329,9 +5329,9 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <plain>
 </plain>
 <instances>
-<instance part="MODUL1" gate="MODUL" x="-144.78" y="81.28" smashed="yes">
-<attribute name="NAME" x="-162.56" y="55.88" size="1.778" layer="95"/>
-<attribute name="VALUE" x="-162.56" y="53.34" size="1.778" layer="96"/>
+<instance part="MODUL1" gate="MODUL" x="-130.81" y="76.2" smashed="yes">
+<attribute name="NAME" x="-148.59" y="50.8" size="1.778" layer="95"/>
+<attribute name="VALUE" x="-148.59" y="48.26" size="1.778" layer="96"/>
 </instance>
 <instance part="J1" gate="G$1" x="-10.16" y="33.02" smashed="yes" rot="R180">
 <attribute name="VALUE" x="-7.62" y="37.846" size="1.778" layer="96" font="vector" rot="R180"/>
@@ -5364,11 +5364,11 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <instance part="GND5" gate="1" x="-106.68" y="-3.81" smashed="yes">
 <attribute name="VALUE" x="-106.68" y="-4.064" size="1.778" layer="96" align="top-center"/>
 </instance>
-<instance part="GND7" gate="1" x="-147.32" y="39.37" smashed="yes">
-<attribute name="VALUE" x="-147.32" y="39.116" size="1.778" layer="96" align="top-center"/>
+<instance part="GND7" gate="1" x="-133.35" y="34.29" smashed="yes">
+<attribute name="VALUE" x="-133.35" y="34.036" size="1.778" layer="96" align="top-center"/>
 </instance>
-<instance part="SUPPLY8" gate="G$1" x="-154.94" y="121.92" smashed="yes">
-<attribute name="VALUE" x="-154.94" y="124.714" size="1.778" layer="96" align="bottom-center"/>
+<instance part="SUPPLY8" gate="G$1" x="-140.97" y="116.84" smashed="yes">
+<attribute name="VALUE" x="-140.97" y="119.634" size="1.778" layer="96" align="bottom-center"/>
 </instance>
 <instance part="SUPPLY1" gate="G$1" x="6.35" y="35.56" smashed="yes">
 <attribute name="VALUE" x="6.35" y="38.354" size="1.778" layer="96" align="bottom-center"/>
@@ -5473,7 +5473,7 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <segment>
 <pinref part="SUPPLY8" gate="G$1" pin="5V"/>
 <pinref part="MODUL1" gate="MODUL" pin="VIN"/>
-<wire x1="-154.94" y1="121.92" x2="-154.94" y2="116.84" width="0.1524" layer="91"/>
+<wire x1="-140.97" y1="116.84" x2="-140.97" y2="111.76" width="0.1524" layer="91"/>
 </segment>
 <segment>
 <pinref part="SUPPLY2" gate="G$1" pin="5V"/>
@@ -5532,12 +5532,12 @@ You are welcome to use this library for commercial purposes. For attribution, we
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="COM"/>
 <pinref part="GND7" gate="1" pin="GND"/>
-<wire x1="-147.32" y1="45.72" x2="-147.32" y2="43.18" width="0.1524" layer="91"/>
+<wire x1="-133.35" y1="40.64" x2="-133.35" y2="38.1" width="0.1524" layer="91"/>
 <pinref part="MODUL1" gate="MODUL" pin="COM@1"/>
-<wire x1="-147.32" y1="43.18" x2="-147.32" y2="41.91" width="0.1524" layer="91"/>
-<wire x1="-139.7" y1="45.72" x2="-139.7" y2="43.18" width="0.1524" layer="91"/>
-<wire x1="-139.7" y1="43.18" x2="-147.32" y2="43.18" width="0.1524" layer="91"/>
-<junction x="-147.32" y="43.18"/>
+<wire x1="-133.35" y1="38.1" x2="-133.35" y2="36.83" width="0.1524" layer="91"/>
+<wire x1="-125.73" y1="40.64" x2="-125.73" y2="38.1" width="0.1524" layer="91"/>
+<wire x1="-125.73" y1="38.1" x2="-133.35" y2="38.1" width="0.1524" layer="91"/>
+<junction x="-133.35" y="38.1"/>
 </segment>
 <segment>
 <pinref part="J1" gate="G$1" pin="2"/>
@@ -5612,8 +5612,8 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="D3"/>
-<wire x1="-119.38" y1="101.6" x2="-101.6" y2="101.6" width="0.1524" layer="91"/>
-<label x="-107.95" y="101.6" size="1.778" layer="95"/>
+<wire x1="-105.41" y1="96.52" x2="-87.63" y2="96.52" width="0.1524" layer="91"/>
+<label x="-93.98" y="96.52" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="N$7" class="0">
@@ -5684,8 +5684,8 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="D4"/>
-<wire x1="-119.38" y1="99.06" x2="-101.6" y2="99.06" width="0.1524" layer="91"/>
-<label x="-107.95" y="99.06" size="1.778" layer="95"/>
+<wire x1="-105.41" y1="93.98" x2="-87.63" y2="93.98" width="0.1524" layer="91"/>
+<label x="-93.98" y="93.98" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="STEP" class="0">
@@ -5696,8 +5696,8 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="D5"/>
-<wire x1="-119.38" y1="96.52" x2="-101.6" y2="96.52" width="0.1524" layer="91"/>
-<label x="-107.95" y="96.52" size="1.778" layer="95"/>
+<wire x1="-105.41" y1="91.44" x2="-87.63" y2="91.44" width="0.1524" layer="91"/>
+<label x="-93.98" y="91.44" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="SLEEP" class="0">
@@ -5713,8 +5713,8 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="D6"/>
-<wire x1="-119.38" y1="93.98" x2="-101.6" y2="93.98" width="0.1524" layer="91"/>
-<label x="-107.95" y="93.98" size="1.778" layer="95"/>
+<wire x1="-105.41" y1="88.9" x2="-87.63" y2="88.9" width="0.1524" layer="91"/>
+<label x="-93.98" y="88.9" size="1.778" layer="95"/>
 </segment>
 </net>
 <net name="LEDS" class="0">
@@ -5725,8 +5725,8 @@ You are welcome to use this library for commercial purposes. For attribution, we
 </segment>
 <segment>
 <pinref part="MODUL1" gate="MODUL" pin="D2"/>
-<wire x1="-119.38" y1="104.14" x2="-101.6" y2="104.14" width="0.1524" layer="91"/>
-<label x="-107.95" y="104.14" size="1.778" layer="95"/>
+<wire x1="-105.41" y1="99.06" x2="-87.63" y2="99.06" width="0.1524" layer="91"/>
+<label x="-93.98" y="99.06" size="1.778" layer="95"/>
 </segment>
 </net>
 </nets>
