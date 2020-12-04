@@ -1,7 +1,9 @@
 # minibot
 
-The directory WhiteSpirit_C contains the files of the minibot (25 nov 18h) \
-The directory GrayCode_C contains the files given by the assistants
+The directory WhiteSpirit_C contains the files of the minibot (4 dec 18h) \
+The directory GrayCode_C contains the files given by the assistants (unmodified) \
+The directory Python contains the python script to read in SPI \
+The directory WhiteSpirit_python contains the python files given by the assistants (unmodified)
 
 ## Useful resources
 * GitHub slamtec/rplidar for C++ : https://github.com/slamtec/rplidar_sdk

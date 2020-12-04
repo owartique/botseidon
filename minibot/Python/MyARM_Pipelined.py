@@ -17,17 +17,16 @@ sleep(0.1)
 GPIO.output(MyARM_ResetPin, GPIO.LOW)
 sleep(0.1)
 
-# set the baud rate
-ToSPI = [0x80, 0x00, 0x4F, 0x00, 0x00]
-FromSPI = MySPI_FPGA.xfer2(ToSPI)
-
 # write the value 5 in the register at address 1
-ToSPI = [0x81, 0x00, 0x00, 0x00, 0x05]
+#ToSPI = [0x00, 0x01, 0x00, 0x00, 0x00, 0x00]
+ToSPI = [0x01, 0x00, 0x00, 0x00, 0x00]
 FromSPI = MySPI_FPGA.xfer2(ToSPI)
+print(FromSPI)
 
-# write the value 4 in the register at address 2
-ToSPI = [0x82, 0x00, 0x00, 0x00, 0x04]
-FromSPI = MySPI_FPGA.xfer2(ToSPI)
+while True:
+    FromSPI = MySPI_FPGA.xfer2(ToSPI)
+    print(FromSPI)
+    sleep(0.1)
 
 # 
 GPIO.output(MyARM_ResetPin, GPIO.HIGH)
@@ -35,8 +34,5 @@ sleep(0.1)
 GPIO.output(MyARM_ResetPin, GPIO.LOW)
 sleep(1)
 
-ToSPI = [0x03, 0x00, 0x00, 0x00, 0x00]
-FromSPI = MySPI_FPGA.xfer2(ToSPI)
-print(FromSPI)
-
+MySPI_FPGA.close()
 

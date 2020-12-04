@@ -1,0 +1,61 @@
+{
+	"partitions" : [
+		{
+			"name" : "Top",
+			"pins" : [
+				{
+					"name" : "GPIO_0_PI[9]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_0_PI[11]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_0_PI[13]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_0_PI[15]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_1[0]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_1[1]",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_1[2]",
+					"strict" : false
+				},
+				{
+					"name" : "CLOCK_50",
+					"strict" : false
+				},
+				{
+					"name" : "GPIO_1_IN[0]",
+					"strict" : false
+				},
+				{
+					"name" : "altera_reserved_tms",
+					"strict" : false
+				},
+				{
+					"name" : "altera_reserved_tck",
+					"strict" : false
+				},
+				{
+					"name" : "altera_reserved_tdi",
+					"strict" : false
+				},
+				{
+					"name" : "altera_reserved_tdo",
+					"strict" : false
+				}
+			]
+		}
+	]
+}

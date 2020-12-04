@@ -18,6 +18,7 @@ class SPI_DE0: public SPI
 	
 		void writeSPI(unsigned int ad, int data);
 		unsigned int readSPI(unsigned int ad);
+		int readSPIolivier(unsigned int ad);
 
 		void write(unsigned int ad, unsigned int value);
 		unsigned int read(unsigned int ad);

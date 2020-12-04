@@ -1,10 +1,14 @@
 #include <cstdio>
 #include <time.h>
+#include <string.h>
+#include <cmath>
 
 #include <wiringPiSPI.h>
 #include "IO/COM/CAN/CAN.hh"
 #include "IO/COM/SPI/Specific/SPI_CAN.hh"
 #include "IO/COM/SPI/SPI.hh"
+
+#include "IO/COM/SPI/Specific/SPI_DE0.hh"
 
 #include "/home/pi/slamware/rplidar_sdk-release-v1.12.0/sdk/sdk/include/rplidar.h"
 #include "/home/pi/slamware/rplidar_sdk-release-v1.12.0/sdk/sdk/include/rplidar_driver.h"
@@ -24,20 +28,27 @@ void ctrlc(int)
 #include <unistd.h>
 #include <stdlib.h>
 
-
 #define CAN_BR 125e3
 
 
-
-
 /* Variables declaration */
-const float DELTA = 300.0;    // [mm]
-const float ALPHA = 10.0;     // [deg]
-bool isMoving = false;
+const float DELTA = 500.0;   // [mm]
+const float ALPHA = 15.0;    // [deg]
+const int DC = 25;           // dutycycle of the propulsion motors
+
+float leftSpeedLinear = 0.0;    // linear speed of the left wheel [m/s]
+float rightSpeedLinear = 0.0;   // linear speed of the right wheel [m/s]
+
+float leftSpeedAngular = 0.0;   // angular speed of the left wheel [rad/s]
+float rightSpeedAngular = 0.0;  // angular speed of the right wheel [rad/s]
+
+bool isMoving = false;          // variable to keep track if the minibot is moving or not
 bool obstacle;
 u_result     op_result;
 rp::standalone::rplidar::RPlidarDriver* lidar = rp::standalone::rplidar::RPlidarDriver::CreateDriver();
-CAN *can = new CAN(CAN_BR);
+CAN *can = new CAN(CAN_BR);             // pointer to CAN
+SPI_DE0 *spi = new SPI_DE0(0,500000);   // pointer to SPI
+
 
 
 /*
@@ -63,9 +74,21 @@ void lidarConfiguration(){
 }
 
 /*
-    Va chercher les donnees du dernier tour et renvoie true si il y a au moins un obstacle
+    Call this function when lidar is not used anymore
+        * stop the motor
+        * get rid of the driver
 */
-bool refreshData(){
+void stopLidar(){
+    lidar->stop();
+    lidar->stopMotor();
+    rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
+    lidar = NULL;
+}
+
+/*
+    Return true if at least one obstacle in the last rotation of the lidar
+*/
+bool refreshData(float ang, float delta){
     rplidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
     op_result = lidar->grabScanDataHq(nodes, count);
@@ -76,7 +99,7 @@ bool refreshData(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                if(angle<=ALPHA & (angle>=(360.0-ALPHA) | dist<DELTA)){
+                if(angle<=ang & (angle>=(360.0-ang) | dist<delta)){
                     return true;
                 }
         	 }
@@ -89,7 +112,7 @@ bool refreshData(){
     beacon detection
 */
 void detect(){
-    obstacle = refreshData();
+    obstacle = refreshData(ALPHA, DELTA);
     if(isMoving & obstacle){ // si obstacle et mouvement alors stop
         can->ctrl_led(1);
         can->ctrl_motor(0);
@@ -105,13 +128,15 @@ void detect(){
 }
 
 /*
-    return 0 if beacon is closer than 300 mm
-           1 if beacon is between 300 and 800 mm on the left
-           2 if beacon is between 300 and 800 mm on the right
-           3 if beacon is between 300 and 800 mm on the front
+    return 0 if beacon is closer than DELTA
+           1 if beacon is on the left
+           2 if beacon is on the right
+           3 if beacon is further than DELTA on the front
            -1 otherwise
 */
-int whereIsBeacon(){
+int whereIsBeacon(float ang, float delta){
+    float dist_min = 10000;
+    int result = -1;
     rplidar_response_measurement_node_hq_t nodes[8192];
     size_t   count = _countof(nodes);
     op_result = lidar->grabScanDataHq(nodes, count);
@@ -122,63 +147,114 @@ int whereIsBeacon(){
        		 float dist = nodes[pos].dist_mm_q2/4.0f;
         	 float quality = nodes[pos].quality;
          	 if(quality>0.0){
-                    if(angle>20.f & angle<90.f & dist>DELTA & dist<800.f){
-                        return 2;
+                    if(angle>ang & angle<180.f){
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 2;
+                        }
                     }
-                    else if(angle<340.f & angle>270.f & dist>DELTA & dist<800.f){
-                        return 1;
+                    else if(angle<(360.f-ang) & angle>180.f){
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 1;
+                        }
                     }
-                    else if(angle>340.f | angle<20.f & dist>DELTA & dist<800.f){
-                        return 3;
+                    else if(angle>(360.f-ang) | angle<ALPHA & dist>delta){
+                        if(dist<dist_min){
+                            dist_min = dist;
+                            result = 3;
+                        }
                     }
-                    else if(dist<DELTA){
+                    else if(dist<delta){//} & angle<90.0 | angle>(180.f)){
                         return 0;
                     }
-            }
-	    }
+         	 }
+        }
     }
-    return -1;
+    return result;
 }
+
+/*
+    encoder
+*/
+void encoder(){
+    const int LEFT_ENCODER_ADR  = 0;
+    const int RIGHT_ENCODER_ADR = 1;
+    const int PPR_LEFT  = 2048;//4096;          
+    const int PPR_RIGHT = 2048;
+    const int BIAS = 4092;          
+    //const float PI = 3.141592654; // using M_PI instead (from cmath library)
+    const float R  = 0.03;          // wheel radius [m]
+    const float DT = 0.02;          // refresh rate of 0.02 seconds or 50 Hz
+
+    // receive data from DE0 via SPI
+    int leftEncoder  = spi->readSPIolivier(LEFT_ENCODER_ADR);
+    leftEncoder  = spi->readSPIolivier(LEFT_ENCODER_ADR);
+    int rightEncoder = spi->readSPIolivier(RIGHT_ENCODER_ADR);
+    rightEncoder = spi->readSPIolivier(RIGHT_ENCODER_ADR);
+
+    //linear speed [m/s]
+    leftSpeedLinear  = 2*M_PI*R*((leftEncoder-BIAS)/(0.02*PPR_LEFT*14));
+    rightSpeedLinear = 2*M_PI*R*((rightEncoder-BIAS)/(0.02*PPR_RIGHT*14));
+
+    // angular speed [rad/s]
+    leftSpeedAngular  = leftSpeedLinear/R;
+    rightSpeedAngular = rightSpeedLinear/R;
+}
+
+
+
 
 /*
     if i = 0 stop
        i = 1 turn left
        i = 2 turn right
        i = 3 move straight
+    Print the movements on the console is verbose is true
 */
-void move(int i){
+void move(int i, bool verbose){
     if(i==0 & isMoving){
         can->ctrl_motor(0);
         isMoving = false;
+        if(verbose) printf("stop\n");
+    }
+    else if(i==0 & !isMoving){
+        if(verbose) printf("stop\n");
     }
     else if(i==1 & isMoving){
-        can->push_PropDC(0,20);
+        can->push_PropDC(0,DC);
+        if(verbose) printf("turn left\n");
     }
     else if(i==1 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(0,20);
+        can->push_PropDC(0,DC);
         isMoving = true;
+        if(verbose) printf("turn left\n");
     }
     else if(i==2 & isMoving){
-        can->push_PropDC(20,0);
+        can->push_PropDC(DC,0);
+        if(verbose) printf("turn right\n");
     }
     else if(i==2 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(20,0);
+        can->push_PropDC(DC,0);
         isMoving = true;
+        if(verbose) printf("turn right\n");
     }
     else if(i==3 & isMoving){
-        can->push_PropDC(20,20);
+        can->push_PropDC(DC,DC);
+        if(verbose) printf("move straight\n");
     }
     else if(i==3 & !isMoving){
         can->ctrl_motor(1);
-        can->push_PropDC(20,20);
+        can->push_PropDC(DC,DC);
         isMoving = true;
+        if(verbose) printf("move straight\n");
     }
-    else if(i>3){
+    else{
         can->ctrl_motor(0);
         isMoving = false;
-        printf("Invalid entry, motor are turned of for safety\n");
+        if(verbose) printf("Invalid, motors OFF\n");
     }
 }
 
@@ -187,9 +263,9 @@ void move(int i){
     Print the welcome message on console
 */
 void welcome(){
-    printf("##############################################################\n");
+    printf("#############################################################################################################################\n");
     printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
-    printf("##############################################################\n");
+    printf("#############################################################################################################################\n");
     printf("\t\t I'm Mister GrayCode, please take care of me !\n");
     printf("\t\t Please do not interchange the chips on my tower/motor PWM boards !\n");
     printf("\t\t Try to respect the C-file interface when programming me because\n \t\t it will be the same in the robotic project (Q2) !\n");
@@ -197,28 +273,32 @@ void welcome(){
 
 
 int main(int argc, char** argv){
-    welcome();
+    //welcome();
     lidarConfiguration();
 
 	can->configure();
-	can->ctrl_led(0);
-	can->push_PropDC(20,20);
-	can->ctrl_motor(0);
+	can->ctrl_led(1);
+	can->ctrl_motor(1);
+    can->push_PropDC(40,20);
 
 	signal(SIGINT, ctrlc);
 
     while (1){
-        move(whereIsBeacon());
+        //move(whereIsBeacon(ALPHA,DELTA),true);
+
+        encoder();
+        printf("%.4f \t %.4f\n",leftSpeedLinear,rightSpeedLinear);
+        //printf("%i \t %i\n",spi->readSPIolivier(0),spi->readSPIolivier(1));
         if (ctrl_c_pressed){
                 break;
         }
     }
-	lidar->stop();
-	lidar->stopMotor();
+
+
 	can->ctrl_led(0);
 	can->ctrl_motor(0);
+    stopLidar();
 
-	rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
-	lidar = NULL;
+
 	return 0;
 }

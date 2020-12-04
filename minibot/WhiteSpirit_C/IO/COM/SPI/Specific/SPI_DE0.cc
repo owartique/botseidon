@@ -46,3 +46,14 @@ unsigned int SPI_DE0::read(unsigned int ad)
 	return readSPI(0x20);	
 
 }
+
+int SPI_DE0::readSPIolivier(unsigned int ad)
+{
+	unsigned char bytes[5] = {0};
+    	tobytes(1,ad,bytes);
+    	wiringPiSPIDataRW(cs, bytes, 5);
+	return bytesToInt(&bytes[1],4);
+}
+
+
+

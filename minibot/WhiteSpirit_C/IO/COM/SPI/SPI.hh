@@ -10,6 +10,7 @@ class SPI
 		~SPI();
 		void tobytes(int len, int val, unsigned char *bytes);
 		unsigned int frombytes(int len, unsigned char *bytes);
+		int bytesToInt(unsigned char* b, unsigned length);
 
 	protected:
 		unsigned int baud;
