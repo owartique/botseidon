@@ -2,6 +2,15 @@
 #include <time.h>
 #include <string.h>
 #include <cmath>
+#include <unistd.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "IO/CtrlStruct_gr3.h"
+#include "IO/speed_controller.h"
+
+//#include "IO/ctrl_io.h"
 
 #include <wiringPiSPI.h>
 #include "IO/COM/CAN/CAN.hh"
@@ -25,6 +34,7 @@ void ctrlc(int)
 }
 
 
+
 #include <unistd.h>
 #include <stdlib.h>
 
@@ -32,9 +42,9 @@ void ctrlc(int)
 
 
 /* Variables declaration */
-const float DELTA = 500.0;   // [mm]
-const float ALPHA = 15.0;    // [deg]
-const int DC = 25;           // dutycycle of the propulsion motors
+const float DELTA = 500.0;      // [mm]
+const float ALPHA = 15.0;       // [deg]
+const int DC = 25;              // dutycycle of the propulsion motors
 
 float leftSpeedLinear = 0.0;    // linear speed of the left wheel [m/s]
 float rightSpeedLinear = 0.0;   // linear speed of the right wheel [m/s]
@@ -50,6 +60,12 @@ CAN *can = new CAN(CAN_BR);             // pointer to CAN
 SPI_DE0 *spi = new SPI_DE0(0,500000);   // pointer to SPI
 
 
+
+    
+
+
+
+// ==============================================================================================================================================
 
 /*
     Configuration of the lidar :
@@ -73,6 +89,8 @@ void lidarConfiguration(){
 	lidar->startScan(0,1);
 }
 
+// ==============================================================================================================================================
+
 /*
     Call this function when lidar is not used anymore
         * stop the motor
@@ -84,6 +102,8 @@ void stopLidar(){
     rp::standalone::rplidar::RPlidarDriver::DisposeDriver(lidar);
     lidar = NULL;
 }
+
+// ==============================================================================================================================================
 
 /*
     Return true if at least one obstacle in the last rotation of the lidar
@@ -108,6 +128,8 @@ bool refreshData(float ang, float delta){
     return false;
 }
 
+// ==============================================================================================================================================
+
 /*
     beacon detection
 */
@@ -126,6 +148,8 @@ void detect(){
         isMoving = true;
     }
 }
+
+// ==============================================================================================================================================
 
 /*
     return 0 if beacon is closer than DELTA
@@ -174,6 +198,8 @@ int whereIsBeacon(float ang, float delta){
     return result;
 }
 
+// ==============================================================================================================================================
+
 /*
     encoder
 */
@@ -195,15 +221,24 @@ void encoder(){
 
     //linear speed [m/s]
     leftSpeedLinear  = 2*M_PI*R*((leftEncoder-BIAS)/(0.02*PPR_LEFT*14));
+    while(leftSpeedLinear<-2 | leftSpeedLinear > 2){
+        leftEncoder  = spi->readSPIolivier(LEFT_ENCODER_ADR);
+        leftEncoder  = spi->readSPIolivier(LEFT_ENCODER_ADR);
+        leftSpeedLinear  = 2*M_PI*R*((leftEncoder-BIAS)/(0.02*PPR_LEFT*14));
+    }
     rightSpeedLinear = 2*M_PI*R*((rightEncoder-BIAS)/(0.02*PPR_RIGHT*14));
+    while(rightSpeedLinear<-2 | rightSpeedLinear > 2){
+        rightEncoder  = spi->readSPIolivier(RIGHT_ENCODER_ADR);
+        rightEncoder  = spi->readSPIolivier(RIGHT_ENCODER_ADR);
+        rightSpeedLinear  = 2*M_PI*R*((rightEncoder-BIAS)/(0.02*PPR_RIGHT*14));
+    }
 
     // angular speed [rad/s]
     leftSpeedAngular  = leftSpeedLinear/R;
     rightSpeedAngular = rightSpeedLinear/R;
 }
 
-
-
+// ==============================================================================================================================================
 
 /*
     if i = 0 stop
@@ -258,44 +293,69 @@ void move(int i, bool verbose){
     }
 }
 
+// ==============================================================================================================================================
 
 /*
     Print the welcome message on console
 */
 void welcome(){
-    printf("#############################################################################################################################\n");
-    printf("\t\t\tWelcome to the Minibot project of the ELEME2002 class :)");
-    printf("#############################################################################################################################\n");
-    printf("\t\t I'm Mister GrayCode, please take care of me !\n");
-    printf("\t\t Please do not interchange the chips on my tower/motor PWM boards !\n");
-    printf("\t\t Try to respect the C-file interface when programming me because\n \t\t it will be the same in the robotic project (Q2) !\n");
+    printf("########################################################################################\n");
+    printf("\t Welcome to the Minibot project of the ELEME2002 class :)\n");
+    printf("########################################################################################\n");
+    printf("\t I'm Mister White Spirit, please take care of me !\n");
+    printf("\t Please do not interchange the chips on my tower/motor PWM boards !\n");
+    printf("\t Try to respect the C-file interface when programming me because\n \t it will be the same in the robotic project (Q2) !\n");
 }
 
+// ==============================================================================================================================================
 
 int main(int argc, char** argv){
-    //welcome();
+    welcome();
+    
     lidarConfiguration();
+    can->configure();
+    can->ctrl_led(1);
+    //can->ctrl_motor(0);
+    //can->push_PropDC(20,20);
+    can->ctrl_motor(1);
+    
 
-	can->configure();
-	can->ctrl_led(1);
-	can->ctrl_motor(1);
-    can->push_PropDC(40,20);
 
-	signal(SIGINT, ctrlc);
+    // Controller
+    CtrlStruct *ctrl = (struct CtrlStruct*)malloc(sizeof(CtrlStruct));
+
+    init_speed_controller(ctrl);
+    
+    double omega_ref[2];
+    double *omega_ref_ptr = omega_ref;
+    omega_ref_ptr[0] = 7.0; 
+    omega_ref_ptr[1] = 7.0; 
+    run_speed_controller(ctrl,omega_ref_ptr);
+    
+
+    //printf("%f et %f\n",ctrl->theUserStruct->theMotor_l->Ki,ctrl->theUserStruct->theMotor_r->komega);
 
     while (1){
-        //move(whereIsBeacon(ALPHA,DELTA),true);
-
+        
+        //move(whereIsBeacon(ALPHA,DELTA),false);
         encoder();
-        printf("%.4f \t %.4f\n",leftSpeedLinear,rightSpeedLinear);
+        ctrl->theCtrlIn->l_wheel_speed = leftSpeedAngular;
+        ctrl->theCtrlIn->r_wheel_speed = rightSpeedAngular;
+
+        run_speed_controller(ctrl,omega_ref_ptr);
+        can->push_PropDC(ctrl->theCtrlOut->wheel_commands[L_ID],ctrl->theCtrlOut->wheel_commands[R_ID]);
+        printf("%.4f \t %.4f\n",leftSpeedAngular,rightSpeedAngular);
+        sleep(ctrl->theUserStruct->dt);
         if (ctrl_c_pressed){
                 break;
         }
     }
-    
-	can->ctrl_led(0);
-	can->ctrl_motor(0);
-    stopLidar();
+	
+    printf("hello\n");
+    sleep(0.1);
 
-	return 0;
+    can->ctrl_led(0);
+    can->ctrl_motor(0);
+    stopLidar();
+    return 0;
 }

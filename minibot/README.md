@@ -1,6 +1,6 @@
 # minibot
 
-The directory WhiteSpirit_C contains the files of the minibot (4 dec 18h) \
+The directory WhiteSpirit_C contains the files of the minibot (6 dec 18h) \
 The directory GrayCode_C contains the files given by the assistants (unmodified) \
 The directory Python contains the python script to read in SPI \
 The directory WhiteSpirit_python contains the python files given by the assistants (unmodified)

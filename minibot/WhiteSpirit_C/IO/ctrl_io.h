@@ -3,8 +3,8 @@
  * \file ctrl_io.h
  * \brief Structures defining the inputs and the outputs of the Minibot controller
  */
-#ifndef _CTRL_IO_H_
-#define _CTRL_IO_H_
+#ifndef _CTRL_IO_H_ //ce if ne s'execute que si _CTRL_IO_H_ n'est pas defini
+#define _CTRL_IO_H_ //The #define creates a macro (macro = partie de code qui a un nom)
 
 // number of micro-switches
 #define NB_U_SWITCH 2
@@ -13,7 +13,7 @@
 #define NB_STORE_EDGE 10
 
 // ID of the right and left sides
-enum{R_ID, L_ID};
+enum{R_ID, L_ID}; //enume attribue un nom à des constantes entières
 
 /// Controller inputs
 typedef struct CtrlIn
