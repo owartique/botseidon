@@ -11,3 +11,17 @@ The directory WhiteSpirit_python contains the python files given by the assistan
 * Slamtec RRLIDAR : Interface Protocol and Application Notes : https://www.robotshop.com/media/files/pdf2/rpk-02-communication-protocol.pdf
 * Slamtec install tuto : http://developer.slamtec.com/docs/slamware/cpp-sdk-en/2.8.0_rtm/?fbclid=IwAR0n3ewoXUr1POoVsF6gEOWcJtpf7d9gVip1L2fVje4NJ_ixXStBRh5o0sw
 
+## Convention
+* By definition every comment/variable/function/... must be written in English
+* Functions must be commented and before every definition the input/output must be documented as follow :
+'''c
+/*
+* param a : the number on which the addition is performed
+* return : the addition between a and b
+* description : computes the addition between two numbers and returns the result
+*/
+int addition(int a, int b){
+  return a + b;
+}
+'''
+
