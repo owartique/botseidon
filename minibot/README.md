@@ -13,11 +13,12 @@ The directory WhiteSpirit_python contains the python files given by the assistan
 
 ## Convention
 * By definition every comment/variable/function/... must be written in English
-* Functions must be commented and before every definition the input/output must be documented as follow :
+* Functions must be commented and before every definition the input/output must be documented as follow : \
 '''c
 /*
-* param a : the number on which the addition is performed
-* return : the addition between a and b
+* param a : first number
+* param b : second number
+* return : a+b
 * description : computes the addition between two numbers and returns the result
 */
 int addition(int a, int b){
