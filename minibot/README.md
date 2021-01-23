@@ -25,10 +25,11 @@ int addition(int a, int b){
   return a + b;
 }
 ```
-* Keep the main.cc file as simple as possible : every function must be declared in a header file and included in the main file
-* Use pointer and variable reference as much as possible
+* Keep the main.cc file as clean as possible
+* Every function must be declared in a header file and included in the main file
+* Use pointers and references as much as possible
 * Do not create functions that work in only one specific case
-* Keep the code as simple as possible, if the function gets too complicated then split the functions in multiple subfunctions
+* Keep the code as simple as possible, if the function gets too complicated then split it in multiple subfunctions
 
 
 
