@@ -14,7 +14,7 @@ The directory WhiteSpirit_python contains the python files given by the assistan
 ## Convention
 * By definition every comment/variable/function/... must be written in English
 * Functions must be commented and before every definition the input/output must be documented as follow : \
-'''c
+```c
 /*
 * param a : first number
 * param b : second number
@@ -24,5 +24,5 @@ The directory WhiteSpirit_python contains the python files given by the assistan
 int addition(int a, int b){
   return a + b;
 }
-'''
+```
 
