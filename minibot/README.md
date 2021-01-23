@@ -13,7 +13,7 @@ The directory WhiteSpirit_python contains the python files given by the assistan
 
 ## Convention
 * By definition every comment/variable/function/... must be written in English
-* Functions must be commented and before every definition the input/output must be documented as follow : \
+* Functions must be commented and before every definition the input/output must be documented as follow : 
 ```c
 /*
 * param a : first number
@@ -25,4 +25,10 @@ int addition(int a, int b){
   return a + b;
 }
 ```
+* Keep the main.cc file as simple as possible : every function must be declared in a header file and included in the main file
+* Use pointer and variable reference as much as possible
+* Do not create functions that work in only one specific case
+* Keep the code as simple as possible, if the function gets too complicated then split the functions in multiple subfunctions
+
+
 
