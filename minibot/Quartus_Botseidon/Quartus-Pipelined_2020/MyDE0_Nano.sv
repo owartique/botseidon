@@ -38,6 +38,13 @@ input logic 		     [1:0]		GPIO_1_IN
 	
 	assign clk   = CLOCK_50;
 	assign reset = GPIO_0_PI[1]; 
+	
+//=======================================================
+//  I2C  
+//=======================================================
+	
+	//assign GPIO_1[4] = GPIO_0_PI[2]; // SDA
+	//assign GPIO_1[5] = GPIO_0_PI[3]; // SCL
   
 //=======================================================
 //  SPI
@@ -319,5 +326,11 @@ module nombreDeTick6(input logic A, B, clk,
 	
 	
 	assign Ticks = bulshit1 + bulshit2 + bulshit3 + bulshit4;
+	
+	
+	
+
+
+
 	
 endmodule
